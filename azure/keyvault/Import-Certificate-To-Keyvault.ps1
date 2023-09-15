@@ -8,7 +8,8 @@ param(
     $ErrorActionPreference = 'Stop'
     $DeploymentScriptOutputs = @{}
     
-    Import-AzKeyVaultCertificate -VaultName $vaultName -Name $certificateName -CertificateString $certificateData -Password $certificatePwd
+    $certificatePassword = ConvertTo-SecureString -String $certificatePwd -AsPlainText -Force
+    Import-AzKeyVaultCertificate -VaultName $vaultName -Name $certificateName -CertificateString $certificateData -Password $certificatePassword
     $newCert = Get-AzKeyVaultCertificate -VaultName $vaultName -Name $certificateName
 
     # Wait until upload to Key Vault is finished
