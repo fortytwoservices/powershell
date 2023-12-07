@@ -20,8 +20,10 @@ try {
     New-AzRoleAssignment -RoleDefinitionName "Desktop Virtualization User" -ObjectID $entraIdAdminsGroupObjectId -Scope $resourceGroup
     New-AzRoleAssignment -RoleDefinitionName "Desktop Virtualization User" -ObjectID $entraIdUsersGroupObjectId -Scope $resourceGroup
 
-    # Allow members of Admins group to login to VM as admin
+    # Allow members of Admins group to login to VM as admin, Operate backups and power on/off VM
     New-AzRoleAssignment -RoleDefinitionName "Virtual Machine Administrator Login" -ObjectID $entraIdAdminsGroupObjectId -Scope $resourceGroup
+    New-AzRoleAssignment -RoleDefinitionName "Desktop Virtualization Power On Off Contributor" -ObjectID $entraIdAdminsGroupObjectId -Scope $resourceGroup
+    New-AzRoleAssignment -RoleDefinitionName "Backup Operator" -ObjectID $entraIdAdminsGroupObjectId -Scope $resourceGroup
 
     # Allow members of Users group to login to VM as user
     New-AzRoleAssignment -RoleDefinitionName "Virtual Machine User Login" -ObjectID $entraIdUsersGroupObjectId -Scope $resourceGroup
