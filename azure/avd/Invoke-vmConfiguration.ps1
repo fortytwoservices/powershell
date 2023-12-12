@@ -3,9 +3,9 @@
 # run the script to install chocolatey (this is downloaded from chocolatey.org)
 Write-Host -ForegroundColor DarkGreen "Executing the Chocolatey install.ps1 script"
 try {
-    & "$PSScriptRoot\Install-Chocolatey.ps1"
+    & "$PSScriptRoot\install.ps1"
 } catch {
-    Write-Error "Error occurred while executing Install-Chocolatey.ps1: $_"
+    Write-Error "Error occurred while executing install.ps1: $_"
 }
 
 # run the script to initialize and format the data disk (this is downloaded from github)
