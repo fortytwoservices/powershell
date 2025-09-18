@@ -78,6 +78,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$DistinguishedName
 )
+
 # Connect to specified organizational unit in Active Directory
 function Get-DirectoryEntry {
     param([Parameter(Mandatory)][string]$DistinguishedName)
