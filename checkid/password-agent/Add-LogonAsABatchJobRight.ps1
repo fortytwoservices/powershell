@@ -1,11 +1,29 @@
-#requires -Version 5.1
+<#
+.SYNOPSIS
+    Script provides local security policy user right "Log on as a batch job" to an account.
+    Right "Log on as a batch job" must be held for an account to run a non-interactive scheduled task
+
+.PARAMETER AccountSam
+    Account name (sAMAccount or FQDN) to be added to list to be allowed to "Log on as a batch job"
+
+.PARAMETER DistinguishedName
+    Organizational unit (provided on distinguished name format) where Reset Password permission will be applied
+
+.EXAMPLE
+    PS C:\> .\Add-LogonAsABatchJobRight -AccountSam checkidgMSA$
+
+.EXAMPLE
+    PS C:\> .\Add-LogonAsABatchJobRight -AccountSam checkidgMSA$ -Remove
+#>
+
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 param(
     [Parameter(Mandatory)]
-    [string]$AccountSam,     # e.g. 'DOMAIN\pwdresetgMSA$' or 'MACHINE\svc'
-    [switch]$Remove          # use -Remove to remove permission
+    [string]$AccountSam,     # e.g. 'FABRIKAM\checkidgMSA$' or 'MACHINE\svc'
+    [switch]$Remove
 )
 
+# Resolve and return the SID for the account
 function Get-SidString {
     param([Parameter(Mandatory)][string]$Sam)
     try {
@@ -16,12 +34,14 @@ function Get-SidString {
     }
 }
 
+# Export current local security policy to read current state and update User Rights Assignment for "Log on as a batch job"
 function Export-UserRights {
     param([Parameter(Mandatory)][string]$Path)
     secedit /export /cfg "$Path" | Out-Null
     if (-not (Test-Path -LiteralPath $Path)) { throw "Could not export security policy to $Path" }
 }
 
+# Resolve SIDs of all SeBatchLogonRight from exported security policy .inf (e.g. SeBatchLogonRight = *S-1-5-32-544,*S-1-5-32-551)
 function Get-SeBatchLogonRightSids {
     param([Parameter(Mandatory)][string]$CfgPath)
     $lines = Get-Content -LiteralPath $CfgPath
@@ -39,6 +59,7 @@ function Get-SeBatchLogonRightSids {
     return $parts | ForEach-Object { $_.TrimStart('*') }
 }
 
+# Create new security policy .inf with updated SeBatchLogonRight (SIDs to be included in a string[] list)
 function New-InfForBatchRight {
     param(
         [Parameter(Mandatory)][string[]]$SidList
@@ -85,6 +106,7 @@ $beforeSet = [System.Collections.Generic.HashSet[string]]::new([string[]]$before
 # --- 3) Calculate "after-state" in memory ---
 $afterSet = [System.Collections.Generic.HashSet[string]]::new([string[]]$beforeSids)
 
+# Remove SID from existing list of User Rights Assignment if run with -Remove parameter
 if ($Remove) {
     [void]$afterSet.Remove($sid)
 }
