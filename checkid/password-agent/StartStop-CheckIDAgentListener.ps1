@@ -29,6 +29,9 @@
 
 .EXAMPLE
     PS C:\> .\StartStop-CheckIDAgentListener.ps1
+    
+.EXAMPLE
+    PS C:\> .\StartStop-CheckIDAgentListener.ps1 -TaskName "CheckID password agent"
 
 .EXAMPLE
     PS C:\> .\StartStop-CheckIDAgentListener.ps1 -StopTask -WaitToStopTaskInSeconds 25 -GraceSeconds 25
@@ -38,7 +41,7 @@ param(
     [Parameter(Mandatory = $false)]
     [switch] $StopTask,
     
-    # Name of the scheduled task (adagent that polls Fortytwo API for incoming password change requests)
+    # Name of the scheduled task (Active Directory agent that polls Fortytwo API for incoming password change requests)
     [Parameter(Mandatory = $false)]
     [string] $TaskName = 'CheckID-adagent for password change',
     
@@ -53,15 +56,22 @@ param(
 #region Start scheduled task
 if (-not $StopTask) {
 
-    Import-Module ./EntraIDAccessToken -Force
-    Import-Module ./CheckIDPasswordAgent -Force
-        
-    Add-EntraIDClientCertificateAccessTokenProfile -Resource "2808f963-7bba-4e66-9eee-82d0b178f408" -Thumbprint "THUMBPRINT" -ClientId "CLIENTID" -TenantId "TENANTID"
-        
-    Connect-CheckIDPasswordAgent -AgentID "AGENTID" -Hostname "api.fortytwo.io" -Verbose
+    Install-Module Fortytwo.CheckID.PasswordAgent -Confirm:$false -Force -Verbose -Scope CurrentUser
+    Import-Module Fortytwo.CheckID.PasswordAgent -Force
+    Import-Module EntraIDAccessToken -Force
 
-    # Runs in task scheduler by gMSA (rather remove comment for -Verbose when debugging locally)
-    Start-CheckIDPasswordAgentListener -Sleep 2 # -Verbose
+    Add-EntraIDClientCertificateAccessTokenProfile `
+        -Resource "2808f963-7bba-4e66-9eee-82d0b178f408" `
+        -Thumbprint "THUMBPRINT" `
+        -ClientId "CLIENTID" `
+        -TenantId "TENANTID"
+        
+    Connect-CheckIDPasswordAgent `
+        -AgentID "AGENTID" `
+        -Verbose
+
+    # Runs in task scheduler by gMSA (rather remove comment for -Verbose -Debug when debugging locally)
+    Start-CheckIDPasswordAgentListener -Sleep 2 # -Verbose -Debug
 }
 #endregion
 
