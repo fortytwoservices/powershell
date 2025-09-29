@@ -58,7 +58,6 @@ if (-not $StopTask) {
 
     Install-Module Fortytwo.CheckID.PasswordAgent -Confirm:$false -Force -Verbose -Scope CurrentUser
     Import-Module Fortytwo.CheckID.PasswordAgent -Force
-    Import-Module EntraIDAccessToken -Force
 
     Add-EntraIDClientCertificateAccessTokenProfile `
         -Resource "2808f963-7bba-4e66-9eee-82d0b178f408" `
