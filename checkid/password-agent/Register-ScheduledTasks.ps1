@@ -28,7 +28,7 @@ param(
     # Script including full path
     [string] $script = 'C:\checkid\StartStop-CheckIDAgentListener.ps1',
     # Account name can be, and not limited to, group managed service account (if using a gMSA, including a trailing $)
-    [string] $gMSA = 'checkidgMSA$',
+    [string] $gMSA = 'checkidagent$',
     # Name of scheduled task that will run the password change agent. To avoid multiple instances the `$preTask will be run just before to stop the current task
     [string] $runTask = 'CheckID - start password change agent',
     # Time of day that `$runTask will start
@@ -59,15 +59,15 @@ $runTriggers = @(
     (New-ScheduledTaskTrigger -AtStartup),
     (New-ScheduledTaskTrigger -Daily -At $taskStartDateTime)
 )
-# Configure scheduled task settings which is applied when the task is running 
+# Configure scheduled task settings for scheduled task execution of $runTask
 $runSettings = New-ScheduledTaskSettingsSet -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Seconds 0) -StartWhenAvailable
 # Set property with value 3. Corresponds to 'Stop the existing instance'
 $runSettings.CimInstanceProperties.Item('MultipleInstances').Value = 3 
 
-# Provide identity in which context the scheduled task will run and set to run with highest (admin) RunLevel, if the identity holds such privileges
-$principal = New-ScheduledTaskPrincipal -UserId $gMSA -LogonType Password -RunLevel Highest
+# Provide identity that will run scheduled task
+$principal = New-ScheduledTaskPrincipal -UserId $gMSA -LogonType Password
 
-# Look for an existing scheduled task with the name 
+# Look for an existing scheduled task name matching $runTask
 if (Get-ScheduledTaskInfo -TaskName $runTask -ErrorAction SilentlyContinue) { Unregister-ScheduledTask -TaskName $runTask -Confirm:$false -ErrorAction Stop }
 # Register scheduled task
 Register-ScheduledTask -TaskName $runTask -Action $runAction -Trigger $runTriggers -Settings $runSettings -Principal $principal -Description "Triggers $scriptName which runs continously. Script polls Fortytwo API for pending password reset requests from CheckID onboarding flow."
@@ -84,7 +84,7 @@ $taskStopDatetime = [datetime]::ParseExact($taskStop, "HH:mm", $null)
 $preTrigger = New-ScheduledTaskTrigger -Daily -At $taskStopDatetime
 $preSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable
 
-# Look for an existing scheduled task with the name 
+# Look for an existing scheduled task name matching $preTask
 if (Get-ScheduledTaskInfo -TaskName $preTask -ErrorAction SilentlyContinue) { Unregister-ScheduledTask -TaskName $preTask -Confirm:$false -ErrorAction Stop }
 # Register scheduled task
 Register-ScheduledTask -TaskName $preTask -Action $preAction -Trigger $preTrigger -Settings $preSettings -Principal $principal -Description "Stops $scriptName before daily restart."
