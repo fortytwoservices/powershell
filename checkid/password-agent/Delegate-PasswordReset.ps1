@@ -12,23 +12,23 @@
     Organizational unit (provided on distinguished name format) where Reset Password permission will be applied
 
 .EXAMPLE
-    PS C:\> .\Add-ResetPasswordDelegation -DistinguishedName $DistinguishedName -AccountSam $AccountSam -Confirm
+    PS C:\> .\Add-ResetPasswordDelegation -DistinguishedName "OU=users,OU=organization,DC=fabrikam,DC=com" -AccountSam checkidgMSA$ -Confirm
 
     Add permission (with -Confirm). Will report if the permission is already in place, even with -Confirm present.
 
 .EXAMPLE
-    PS C:\> .\Add-ResetPasswordDelegation -DistinguishedName $DistinguishedName -AccountSam $AccountSam -WhatIf
+    PS C:\> .\Add-ResetPasswordDelegation -DistinguishedName "OU=users,OU=organization,DC=fabrikam,DC=com" -AccountSam checkidgMSA$ -WhatIf
 
     Add permission (with -WhatIf). Will report if the permission is already in place, even with -WhatIf present.
 
 .EXAMPLE
-    PS C:\> .\Remove-ResetPasswordDelegation -DistinguishedName $DistinguishedName -AccountSam $AccountSam -Confirm
+    PS C:\> .\Remove-ResetPasswordDelegation -DistinguishedName "OU=users,OU=organization,DC=fabrikam,DC=com" -AccountSam checkidgMSA$ -Confirm
 
     Remove permission
 
 .EXAMPLE
     PS C:\> $restore = "C:\Users\xxx\AppData\Local\Temp\ACL-Backup_OU_DC_20250915-220453.sddl"
-    PS C:\> .\Restore-AdObjectAcl -DistinguishedName $DistinguishedName -Path $restore -Confirm
+    PS C:\> .\Restore-AdObjectAcl -DistinguishedName "OU=users,OU=organization,DC=fabrikam,DC=com" -Path $restore -Confirm
 
     Restore organizational unit access control list using a specified backup file
 
@@ -40,7 +40,7 @@
     (Optional) PRE-CHECK:
 
     PS C:\> $AccountSam = "checkid" # will match either the account is called 'checkid' or 'checkidgMSA$' because of the Select-String -SimpleMatch
-    PS C:\> dsacls "OU=users,OU=organization,DC=fabrikam,DC=com" | Select-String -SimpleMatch $AccountSam
+    PS C:\> dsacls "OU=users,OU=organization,DC=fabrikam,DC=com" | Select-String -SimpleMatch checkidgMSA$
 
     (*EMPTY* <- see POST-CHECK for how it would display if an existing entry is found)
 
@@ -70,7 +70,7 @@
 #requires -Modules ActiveDirectory
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 param(
-    # Account name, including '$' if it's a group managed service account
+    # Account name, including '$' when it's a group managed service account
     [Parameter(Mandatory = $true)]
     [string]$AccountSam,
 
@@ -174,6 +174,7 @@ function Add-ResetPasswordDelegation {
     )
     $dom = Get-ADDomain
     $acct = if ($AccountSam -match '\\') { $AccountSam } else { "$($dom.NetBIOSName)\$AccountSam" }
+    # Get-AccountSid fails to look up group managed service accounts unless a trailing '$' is included
     $sid = Get-AccountSid -SamAccount $acct
     $resetPwdGuid = Get-ResetPasswordGuid
     $userClassGuid = Get-UserClassGuid
